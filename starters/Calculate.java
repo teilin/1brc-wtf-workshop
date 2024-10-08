@@ -62,7 +62,7 @@ public class Calculate {
                             entry.getValue().sum / entry.getValue().count,
                             entry.getValue().maximum));
         }
-        System.err.println(String.format("Read %d measurements in %dm%.2fs",
+        System.err.println(String.format("Read %d measurements in %dm%.3fs",
                 measurementsCount,
                 timeMs / 60_000,
                 (float) (timeMs % 60_000) / 1_000));
