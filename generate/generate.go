@@ -1,11 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
-	"syscall"
-	"math/rand"
 )
 
 type Decimal1 = int
@@ -43,22 +43,9 @@ func main() {
 		panic(err)
 	}
 	defer f.Close()
-
 	f.Truncate(maxFileSize)
-	data, err := syscall.Mmap(
-		int(f.Fd()),
-		0,
-		int(maxFileSize),
-		syscall.PROT_WRITE,
-		syscall.MAP_SHARED|syscall.MAP_POPULATE,
-	)
-	if err != nil {
-		panic(err)
-	}
-	if err := syscall.Madvise(data, syscall.MADV_SEQUENTIAL); err != nil {
-		panic(err)
-	}
-	defer syscall.Munmap(data)
+	bufferedWriter := bufio.NewWriter(f)
+	defer bufferedWriter.Flush()
 
 	written := 0
 	fmt.Println("Generating measurements.txt...")
@@ -67,21 +54,27 @@ func main() {
 			fmt.Printf("\r%0.2f%%", (float64(i) / (float64(count) / 100)))
 		}
 		station := SOURCE_STATIONS[rand.Int()%len(SOURCE_STATIONS)]
-		written += copy(data[written:], station.name)
 		measurement := station.avg + rand.Int()%(MEASUREMENT_DIVERGENCE*2+1) - MEASUREMENT_DIVERGENCE
-		measurement = max(-999, min(999, measurement))
-		written += writeMeasurement(data[written:], measurement)
+		n, err := writeMeasurement(bufferedWriter, station.name, measurement)
+		if err != nil {
+			panic(err)
+		}
+		written += n
 	}
 	fmt.Println("\r100.00%")
 	f.Truncate(int64(written))
 }
 
-func writeMeasurement(data []byte, measurement int) int {
-	measurementBuffer := [6]byte{}
-	bufPos := 0
+func writeMeasurement(writer *bufio.Writer, stationName []byte, measurement int) (int, error) {
+	n, err := writer.Write(stationName)
+	if err != nil {
+		return 0, err
+	}
 	if measurement < 0 {
-		measurementBuffer[0] = '-'
-		bufPos = 1
+		if err = writer.WriteByte('-'); err != nil {
+			return 0, err
+		}
+		n += 1
 		measurement = -measurement
 	}
 	scale := 100
@@ -89,16 +82,24 @@ func writeMeasurement(data []byte, measurement int) int {
 		scale = 10
 	}
 	for scale > 1 {
-		measurementBuffer[bufPos] = '0' + byte(measurement/scale)
+		if err = writer.WriteByte('0' + byte(measurement/scale)); err != nil {
+			return 0, err
+		}
 		measurement %= scale
 		scale /= 10
-		bufPos++
+		n += 1
 	}
-	measurementBuffer[bufPos] = '.'
-	measurementBuffer[bufPos+1] = '0' + byte(measurement)
-	measurementBuffer[bufPos+2] = '\n'
-	bufPos += 3
-	return copy(data, measurementBuffer[:bufPos])
+	if err = writer.WriteByte('.'); err != nil {
+		return 0, err
+	}
+	if err = writer.WriteByte('0' + byte(measurement)); err != nil {
+		return 0, err
+	}
+	if err = writer.WriteByte('\n'); err != nil {
+		return 0, err
+	}
+	n += 3
+	return n, nil
 }
 
 var SOURCE_STATIONS = [...]weatherStationSource{
