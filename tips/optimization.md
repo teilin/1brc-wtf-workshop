@@ -6,12 +6,33 @@ Be aware that the compiler may optimize several of these for you, but compiler o
 
 example:
 
-# CharSequence/string_view/c#?
+# CharSequence/string_view
 
 - do not copy data unless you have to. allocations are expensive
 - stores a pointer and length instead of copying the whole string
 
 example:
+
+# integer instead of float
+
+You can substitute integers for floats when number of decimals is known
+
+- very slightly reduces CPU cost on most modern CPUs
+- can be more accurate. IEEE 754 floats are not always accurate
+- can use less memory. Int32 instead of using double for example
+- in our specific case it can increase the speed of parsing the numbers into a variable
+
+## instead of this
+
+```c
+float blab = 11.1;
+```
+
+## do this
+
+```c
+int blab1 = 111;
+```
 
 # shrink datastructure
 
@@ -24,7 +45,7 @@ example:
 
 ## instead of this:
 
-```
+```c
 struct Data{
   int min;
   int max;
@@ -32,33 +53,12 @@ struct Data{
 }
 ```
 
-## do this if the data can fit in a short:
+## do this if the data can fit in smaller types:
 
-```
+```c
 struct Data{
-  int16 min;
-  int16 max;
-  int32 sum;
+  int16_t min;
+  int16_t max;
+  int32_t sum;
 }
-```
-
-# int-for-float
-
-Using integers instead of floats when number of decimals is known:
-
-- very slightly reduces CPU cost
-- can be more accurate. especially if number of decimals are known. IEEE 754 floats are not always accurate
-- can use less memory. int32 instead of using double for example.
-- in our specific case it can increase the speed of parsing the numbers into a variable
-
-# instead of this
-
-```
-float blab = 11.1;
-```
-
-# do this
-
-```
-int blab1 = 111;
 ```
