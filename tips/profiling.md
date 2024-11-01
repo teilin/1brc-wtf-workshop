@@ -12,11 +12,13 @@ Her hjelper det å kompilere med debug-symboler (`-g`) og gi executable et rimel
 `sample` må startes først, så det står klart til å begynne å analysere programmet med en gang det kjører.
 
 Terminal 1:
+
 ```sh
 $ sample 1brc-solver 100 1 -mayDie -wait -e
 ```
 
 Terminal 2:
+
 ```sh
 $ g++ -g -o 1brc-solver solution.cpp
 $ ./1brc-solver
@@ -48,3 +50,25 @@ Last ned og installer trial-versjon fra https://www.jetbrains.com/profiler/
 
 Etter endt kjøring skal du få opp et nytt vindu med analyse av kjøretid.
 
+# Python
+
+pycharm har veldig god støtte for profiling. bare installer yappi
+
+```sh
+pip install yappi
+```
+
+Man kan også bruke yappi direkte i koden.
+
+```python
+if __name__ == "__main__":
+  yappi.start(profile_threads=True)
+  main() # or whatever else you wish to run
+  yappi.stop()
+  stats = yappi.get_func_stats()
+  output_name = f"cachegrind_{datetime.datetime.now().isoformat()}.out"
+  stats.save(output_name, type="callgrind")
+```
+
+Bruk kcachegrind/qcachegrind for å se på innholdet i filene.
+Kan installeres på alle Linux distroer og i MacOS gjennom brew/macports.
